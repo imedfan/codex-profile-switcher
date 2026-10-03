@@ -45,7 +45,7 @@ jobs:
 
           version="${tag#v}"
           tag="v$version"
-          artifact="CodexProfileSwitcher-${version}.dmg"
+          artifact="QuotaPilot-${version}.dmg"
 
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"

@@ -7,7 +7,7 @@ if [[ -f "$ROOT_DIR/version.env" ]]; then
 fi
 VERSION="${VERSION:-${MARKETING_VERSION:-0.1.0}}"
 RELEASE_DIR="${RELEASE_DIR:-$ROOT_DIR/.build/release}"
-DMG_PATH="${DMG_PATH:-$RELEASE_DIR/CodexProfileSwitcher-$VERSION.dmg}"
+DMG_PATH="${DMG_PATH:-$RELEASE_DIR/QuotaPilot-$VERSION.dmg}"
 CHECKSUM_PATH="${CHECKSUM_PATH:-$DMG_PATH.sha256}"
 CASK_OUTPUT_PATH="${CASK_OUTPUT_PATH:-$RELEASE_DIR/codex-profile-switcher.rb}"
 GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-4LAU/codex-profile-switcher}"
@@ -31,8 +31,8 @@ cask "$CASK_TOKEN" do
   version "$VERSION"
   sha256 "$SHA256"
 
-  url "https://github.com/$GITHUB_REPOSITORY/releases/download/v#{version}/CodexProfileSwitcher-#{version}.dmg"
-  name "Codex Profile Switcher"
+  url "https://github.com/$GITHUB_REPOSITORY/releases/download/v#{version}/QuotaPilot-#{version}.dmg"
+  name "QuotaPilot"
   desc "Switch OpenAI Codex accounts from the macOS menu bar"
   homepage "https://github.com/$GITHUB_REPOSITORY"
 
@@ -40,8 +40,8 @@ cask "$CASK_TOKEN" do
 
   auto_updates true
 
-  app "CodexProfileSwitcher.app"
-  binary "#{appdir}/CodexProfileSwitcher.app/Contents/Helpers/codex-profile"
+  app "QuotaPilot.app"
+  binary "#{appdir}/QuotaPilot.app/Contents/Helpers/codex-profile"
 
   zap trash: [
     "~/.codex-switcher",

@@ -7,10 +7,10 @@ if [[ -f "$ROOT_DIR/version.env" ]]; then
 fi
 VERSION="${VERSION:-${MARKETING_VERSION:-0.1.0}}"
 RELEASE_DIR="${RELEASE_DIR:-$ROOT_DIR/.build/release}"
-APP_BUNDLE="${APP_BUNDLE:-$ROOT_DIR/CodexProfileSwitcher.app}"
+APP_BUNDLE="${APP_BUNDLE:-$ROOT_DIR/QuotaPilot.app}"
 STAGING_DIR="$RELEASE_DIR/dmg-staging"
-VOLUME_NAME="${VOLUME_NAME:-Codex Profile Switcher}"
-DMG_PATH="${DMG_PATH:-$RELEASE_DIR/CodexProfileSwitcher-$VERSION.dmg}"
+VOLUME_NAME="${VOLUME_NAME:-QuotaPilot}"
+DMG_PATH="${DMG_PATH:-$RELEASE_DIR/QuotaPilot-$VERSION.dmg}"
 CHECKSUM_PATH="$DMG_PATH.sha256"
 CASK_OUTPUT_PATH="${CASK_OUTPUT_PATH:-$RELEASE_DIR/codex-profile-switcher.rb}"
 

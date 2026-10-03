@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in Codex Profile Switcher
+description: Report a bug in QuotaPilot
 labels: ["bug"]
 body:
   - type: textarea

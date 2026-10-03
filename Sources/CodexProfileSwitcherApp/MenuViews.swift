@@ -205,7 +205,8 @@ struct UsageRow: View {
             Text(self.label)
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(self.isHighlighted ? .secondary : .tertiary)
-                .frame(width: 16, alignment: .leading)
+                .lineLimit(1)
+                .frame(width: 20, alignment: .leading)
 
             // The tint keeps keying off the used percent: a nearly exhausted
             // limit stays red whether the number shown is used or remaining.
@@ -230,17 +231,24 @@ struct UsageHeaderView: View {
     let failingProfiles: Int
     let trackedProfiles: Int
 
-    static let baseHeight: CGFloat = 42
-    static let failureHeight: CGFloat = 57
-
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Codex")
-                .font(.system(size: 12, weight: .semibold))
+            HStack(spacing: 10) {
+                Image(nsImage: IconRenderer.render())
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
+                    .accessibilityHidden(true)
 
-            Text(self.statusLabel)
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(AppInfo.name)
+                        .font(.system(size: 12, weight: .semibold))
+
+                    Text(self.statusLabel)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             if self.showsFailure {
                 Label(self.failureLabel, systemImage: "exclamationmark.triangle.fill")

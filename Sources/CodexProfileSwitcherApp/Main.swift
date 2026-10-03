@@ -11,7 +11,7 @@ enum Main {
 
         let appMenu = NSMenu()
         appMenu.addItem(
-            withTitle: "Hide Codex Profile Switcher",
+            withTitle: "Hide QuotaPilot",
             action: #selector(NSApplication.hide(_:)),
             keyEquivalent: "h")
         let hideOthers = appMenu.addItem(
@@ -25,7 +25,7 @@ enum Main {
             keyEquivalent: "")
         appMenu.addItem(.separator())
         appMenu.addItem(
-            withTitle: "Quit Codex Profile Switcher",
+            withTitle: "Quit QuotaPilot",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q")
         let appMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")

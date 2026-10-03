@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_BUNDLE="${APP_BUNDLE:-$ROOT_DIR/CodexProfileSwitcher.app}"
+APP_BUNDLE="${APP_BUNDLE:-$ROOT_DIR/QuotaPilot.app}"
 REPACKAGED_APP_BUNDLE="${REPACKAGED_APP_BUNDLE:-}"
 APP_BUNDLE_ID="com.4lau.codex-profile-switcher"
 HELPER_BUNDLE_ID="com.4lau.codex-profile-switcher"

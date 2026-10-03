@@ -12,7 +12,8 @@ final class SparkleUpdater: NSObject {
 
     func startIfBundledApp() {
         #if canImport(Sparkle)
-            guard Bundle.main.bundlePath.hasSuffix(".app") else { return }
+            guard Bundle.main.bundlePath.hasSuffix(".app"),
+                  Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") != nil else { return }
             let controller = SPUStandardUpdaterController(
                 startingUpdater: true,
                 updaterDelegate: nil,

@@ -31,6 +31,7 @@ let package = Package(
                 .linkedFramework("SwiftUI"),
                 .linkedFramework("Security"),
                 .linkedFramework("ServiceManagement"),
+                .linkedLibrary("sqlite3"),
             ]),
         .executableTarget(
             name: "CodexProfileCLI",
@@ -39,6 +40,10 @@ let package = Package(
             linkerSettings: [
                 .linkedFramework("Security"),
             ]),
+        .testTarget(
+            name: "CursorUsageTests",
+            dependencies: ["CodexProfileSwitcherApp"],
+            path: "Tests/CursorUsageTests"),
         .testTarget(
             name: "AuthBlobTests",
             dependencies: ["CodexProfileCore"],

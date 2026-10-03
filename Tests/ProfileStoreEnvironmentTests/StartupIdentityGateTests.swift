@@ -4,7 +4,12 @@ import Foundation
 import Testing
 
 struct StartupIdentityGateTests {
-    private let installedBundle = URL(fileURLWithPath: "/Applications/CodexProfileSwitcher.app")
+    @Test func localBuildUsesSeparateInstalledApplicationPath() {
+        #expect(StartupIdentityGate.installedBundleURL(bundleIdentifier: "com.4lau.codex-profile-switcher.local").path == "/Applications/QuotaPilot Test.app")
+        #expect(StartupIdentityGate.installedBundleURL(bundleIdentifier: "com.4lau.codex-profile-switcher").path == "/Applications/QuotaPilot.app")
+    }
+
+    private let installedBundle = URL(fileURLWithPath: "/Applications/QuotaPilot.app")
     private let realHome = URL(fileURLWithPath: "/Users/tester")
 
     @Test
@@ -83,21 +88,21 @@ struct StartupIdentityGateTests {
     }
 
     @Test
-    func installedBuildWithoutProductionCapabilityRequiresRecovery() throws {
+    func installedBuildWithoutProductionCapabilityUsesLocalFileVault() throws {
         let result = StartupIdentityGate.classify(
             bundleURL: self.installedBundle,
             environment: [:],
             realHome: self.realHome,
             hasDataProtectionKeychainAccess: false)
 
-        try envExpect(result == .recovery,
-                      "The installed bundle without the production capability must recover")
+        try envExpect(result == .localInstall,
+                      "The installed bundle without the production capability must use its local file vault")
     }
 
     @Test
     func profileHomeOverrideUsesIsolatedIdentity() throws {
         let result = StartupIdentityGate.classify(
-            bundleURL: URL(fileURLWithPath: "/tmp/dev/CodexProfileSwitcher.app"),
+            bundleURL: URL(fileURLWithPath: "/tmp/dev/QuotaPilot.app"),
             environment: ["CODEX_PROFILE_HOME": "/tmp/profile-home-isolated"],
             realHome: self.realHome,
             hasDataProtectionKeychainAccess: false)
@@ -109,7 +114,7 @@ struct StartupIdentityGateTests {
     @Test
     func profileTestHomeOverrideUsesIsolatedIdentity() throws {
         let result = StartupIdentityGate.classify(
-            bundleURL: URL(fileURLWithPath: "/tmp/dev/CodexProfileSwitcher.app"),
+            bundleURL: URL(fileURLWithPath: "/tmp/dev/QuotaPilot.app"),
             environment: ["CODEX_PROFILE_TEST_HOME": "/tmp/profile-test-home-isolated"],
             realHome: self.realHome,
             hasDataProtectionKeychainAccess: false)
@@ -213,11 +218,11 @@ struct StartupIdentityGateTests {
         let fileManager = FileManager.default
         let root = fileManager.temporaryDirectory
             .appendingPathComponent("startup-recovery-canonical-" + UUID().uuidString, isDirectory: true)
-        let target = root.appendingPathComponent("Applications/CodexProfileSwitcher.app", isDirectory: true)
+        let target = root.appendingPathComponent("Applications/QuotaPilot.app", isDirectory: true)
         let alias = root
             .appendingPathComponent("Applications/temporary", isDirectory: true)
             .appendingPathComponent("..", isDirectory: true)
-            .appendingPathComponent("CodexProfileSwitcher.app", isDirectory: true)
+            .appendingPathComponent("QuotaPilot.app", isDirectory: true)
         defer { try? fileManager.removeItem(at: root) }
         try fileManager.createDirectory(at: target, withIntermediateDirectories: true)
 
@@ -249,8 +254,8 @@ struct StartupIdentityGateTests {
         let fileManager = FileManager.default
         let root = fileManager.temporaryDirectory
             .appendingPathComponent("startup-identity-symlink-" + UUID().uuidString, isDirectory: true)
-        let outsideBundle = root.appendingPathComponent("outside/CodexProfileSwitcher.app", isDirectory: true)
-        let installedBundle = root.appendingPathComponent("Applications/CodexProfileSwitcher.app", isDirectory: true)
+        let outsideBundle = root.appendingPathComponent("outside/QuotaPilot.app", isDirectory: true)
+        let installedBundle = root.appendingPathComponent("Applications/QuotaPilot.app", isDirectory: true)
         let realHome = root.appendingPathComponent("home", isDirectory: true)
         defer { try? fileManager.removeItem(at: root) }
 

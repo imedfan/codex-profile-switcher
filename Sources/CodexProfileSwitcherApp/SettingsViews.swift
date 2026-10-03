@@ -1069,7 +1069,7 @@ struct AboutTab: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
-            Text("Switch between OpenAI Codex accounts\nfrom your menu bar.")
+            Text("Codex profiles and Cursor quotas\nin your menu bar.")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

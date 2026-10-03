@@ -6,11 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Fixed
+
+- Profile switching finds the Codex CLI inside current ChatGPT.app builds. The
+  binary moved from `Contents/Resources/codex` to
+  `Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex`, so a switch
+  stopped before it started and reported that the CLI was missing. Older
+  installs that still keep the CLI at the previous path keep working.
+
 ### Added
+
+- Local ad-hoc QuotaPilot builds installed in Applications can use the real
+  Codex home with a private file vault when Developer ID signing is unavailable.
+
+- Renamed the app to **QuotaPilot** with new application and menu bar icons,
+  including a branded menu header with the shared refresh status.
+
+- A separate Cursor card shows Cursor Models (Cm), Other Models (Om), and the
+  weekly Grok Bot (Gb) quotas with the same compact bars as Codex. Monthly and
+  weekly reset countdowns use their respective API dates. Both services share
+  refresh triggers and the top update timestamp; Cursor respects the limit
+  display preference and marks unavailable or stale data.
 
 - Settings now include a **Limit display** preference for showing usage as
   either the percentage used or the percentage remaining. The choice applies
-  to both the menu bar icon and per-profile usage bars.
+  to both Codex and Cursor usage bars.
 
 ## 0.5.21 -- 2026-08-29
 

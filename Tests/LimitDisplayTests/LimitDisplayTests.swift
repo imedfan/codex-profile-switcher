@@ -36,24 +36,19 @@ struct LimitDisplayModeTests {
     }
 }
 
-@Suite("Limit display icon rendering")
-struct LimitDisplayIconRenderingTests {
-
-    @Test("renderer applies the selected display mode at the boundary values")
-    func rendererAppliesDisplayMode() {
-        let usedImage = IconRenderer.render(
-            primaryPercent: 0,
-            secondaryPercent: 100,
-            displayMode: .used)
-        let remainingImage = IconRenderer.render(
-            primaryPercent: 0,
-            secondaryPercent: 100,
-            displayMode: .remaining)
-
-        #expect(usedImage.isValid)
-        #expect(remainingImage.isValid)
-        #expect(usedImage.size != remainingImage.size)
-        #expect(usedImage.tiffRepresentation != remainingImage.tiffRepresentation)
+@Suite("QuotaPilot menu icon")
+struct MenuIconRenderingTests {
+    @Test("loads the supplied artwork as a native template icon")
+    func templateIconLoads() {
+        let assets = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("assets")
+        #expect(FileManager.default.fileExists(atPath: assets.appendingPathComponent(IconRenderer.iconName).path))
+        let image = IconRenderer.render(resourceDirectory: assets)
+        #expect(image.isValid)
+        #expect(image.isTemplate)
+        #expect(image.size.width == 18)
+        #expect(image.size.height == 18)
     }
 }
 
