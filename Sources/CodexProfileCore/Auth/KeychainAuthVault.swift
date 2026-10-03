@@ -312,7 +312,7 @@ public enum KeychainAuthVaultError: LocalizedError {
             case errSecInteractionNotAllowed:
                 return "Unlock the login keychain or run the app in a user session that allows Keychain access."
             case errSecAuthFailed:
-                return "Check Keychain access permissions for Codex Profile Switcher."
+                return "Check Keychain access permissions for QuotaPilot."
             case errSecMissingEntitlement:
                 return "The app may need the Keychain entitlement required by this Keychain item."
             default:

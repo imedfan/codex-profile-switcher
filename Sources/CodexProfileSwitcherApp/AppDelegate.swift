@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var store: ProfileStore!
     private var usageProvider: UsageProvider!
+    private let cursorUsageProvider = CursorUsageProvider()
     private var periodicRefreshTimer: Timer?
     private var menu: PersistentActionMenu!
     private weak var refreshMenuItem: PersistentRefreshMenuItem?
@@ -19,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var hasShownRecoveryNotice = false
     private var canHandleRecoveryNotices = false
     private let refreshPreferences = RefreshPreferences()
+    private let limitDisplayPreferences = LimitDisplayPreferences()
     private let sparkleUpdater = SparkleUpdater()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -74,8 +76,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         self.syncActiveProfile(force: true)
 
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        self.statusItem.button?.image = IconRenderer.renderEmpty()
+        self.statusItem.button?.image = IconRenderer.render()
         self.statusItem.button?.imageScaling = .scaleNone
+        self.updateIcon()
 
         self.menu = PersistentActionMenu(refreshAction: { [weak self] in
             self?.refreshAll()
@@ -89,6 +92,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         self.registerWorkspaceObservers()
         self.usageProvider.onRefreshComplete = { [weak self] in
             self?.handleRefreshComplete()
+        }
+        self.cursorUsageProvider.onChange = { [weak self] in
+            guard let self else { return }
+            self.handleRefreshComplete()
         }
         self.startPeriodicRefreshTimer()
         // Renewal and the first usage refresh both touch the shared lease/auth
@@ -308,11 +315,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func handleRefreshComplete() {
         guard self.store != nil, self.usageProvider != nil else { return }
-        if self.hasPendingForcedRefresh {
+        let isRefreshing = self.usageProvider.isRefreshing || self.cursorUsageProvider.isRefreshing
+        if self.hasPendingForcedRefresh && !isRefreshing {
             self.hasPendingForcedRefresh = false
             self.requestRefresh(force: true)
         } else {
-            self.refreshMenuItem?.setEnabled(true)
+            self.refreshMenuItem?.setEnabled(!isRefreshing)
         }
         self.updateIcon()
         guard self.isMenuOpen else { return }
@@ -347,19 +355,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Icon
 
     func updateIcon() {
-        guard self.store != nil, self.statusItem != nil else { return }
-        guard let activeId = self.store.liveProfileId else {
-            self.statusItem.button?.image = IconRenderer.renderEmpty()
-            return
-        }
-
-        if let snap = self.store.statuses[activeId]?.snapshot {
-            self.statusItem.button?.image = IconRenderer.render(
-                primaryPercent: snap.primaryUsedPercent,
-                secondaryPercent: snap.secondaryUsedPercent)
-        } else {
-            self.statusItem.button?.image = IconRenderer.renderEmpty()
-        }
+        guard self.statusItem != nil else { return }
+        self.statusItem.button?.image = IconRenderer.render()
+        self.statusItem.button?.toolTip = AppInfo.name
+        self.statusItem.button?.setAccessibilityLabel(AppInfo.name)
     }
 
     // MARK: - Menu Construction
@@ -438,8 +437,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self.menu.addItem(.separator())
         }
 
+        self.addCursorUsage()
+        self.menu.addItem(.separator())
+
         let refreshItem = self.menu.makeRefreshItem()
-        refreshItem.setEnabled(!self.usageProvider.isRefreshing)
+        refreshItem.setEnabled(!self.usageProvider.isRefreshing && !self.cursorUsageProvider.isRefreshing)
         self.refreshMenuItem = refreshItem
         self.menu.addItem(refreshItem)
 
@@ -504,9 +506,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func presentRecoveryFailure() {
         let alert = NSAlert()
-        alert.messageText = "Codex Profile Switcher needs the installed app"
+        alert.messageText = "QuotaPilot needs the installed app"
         alert.informativeText =
-            "Install and open the signed Codex Profile Switcher from /Applications, then try again."
+            "Install and open the signed QuotaPilot from /Applications, then try again."
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
         NSApp.activate(ignoringOtherApps: true)
@@ -520,6 +522,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             status: health.status,
             isActive: health.isActive,
             duplicateLine: duplicateLine,
+            displayMode: self.limitDisplayPreferences.mode,
             onSwitch: { [weak self] in self?.switchToProfile(health.profile.id) })
 
         let hostView = NSHostingView(rootView: cardView)
@@ -534,10 +537,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         self.menu.addItem(menuItem)
     }
 
+    private func addCursorUsage() {
+        let view = CursorUsageView(
+            snapshot: self.cursorUsageProvider.snapshot,
+            teamName: self.cursorUsageProvider.teamName,
+            error: self.cursorUsageProvider.error,
+            isRefreshing: self.cursorUsageProvider.isRefreshing,
+            displayMode: self.limitDisplayPreferences.mode)
+        let host = NSHostingView(rootView: view)
+        host.frame = NSRect(origin: .zero, size: host.fittingSize)
+        let item = NSMenuItem()
+        item.view = host
+        self.menu.addItem(item)
+    }
+
     private func addUsageHeader() {
-        let updatedAt = self.store.statuses.values
-            .compactMap { $0.snapshot?.fetchedAt }
-            .max()
+        let updatedAt = (self.store.statuses.values.compactMap { $0.snapshot?.fetchedAt }
+            + [self.cursorUsageProvider.snapshot?.fetchedAt].compactMap { $0 }).min()
         // The age line alone reports the newest snapshot, so one healthy
         // profile hides every broken one. Count the profiles whose last
         // refresh recorded an error and say so outright.
@@ -549,12 +565,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         let failing = tracked.filter { self.store.refreshDiagnostics[$0.id]?.lastError != nil }
         let header = UsageHeaderView(
-            isRefreshing: self.usageProvider.isRefreshing,
+            isRefreshing: self.usageProvider.isRefreshing || self.cursorUsageProvider.isRefreshing,
             updatedAt: updatedAt,
             failingProfiles: failing.count,
             trackedProfiles: tracked.count)
         let hostView = NSHostingView(rootView: header)
-        let height = header.showsFailure ? UsageHeaderView.failureHeight : UsageHeaderView.baseHeight
+        let height = hostView.fittingSize.height
         hostView.frame = NSRect(x: 0, y: 0, width: 290, height: height)
 
         let menuItem = NSMenuItem()
@@ -754,7 +770,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func requestRefresh(force: Bool = false) {
-        if self.usageProvider.isRefreshing {
+        if self.usageProvider.isRefreshing || self.cursorUsageProvider.isRefreshing {
             if force {
                 self.hasPendingForcedRefresh = true
             }
@@ -763,7 +779,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         self.refreshMenuItem?.setEnabled(false)
         self.usageProvider.refreshAll(force: force)
-        self.refreshMenuItem?.setEnabled(!self.usageProvider.isRefreshing)
+        self.cursorUsageProvider.refresh(force: force)
+        self.refreshMenuItem?.setEnabled(!self.usageProvider.isRefreshing && !self.cursorUsageProvider.isRefreshing)
         if self.isMenuOpen {
             self.rebuildMenu()
         }
@@ -774,6 +791,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         SettingsWindow.show(
             store: self.store,
             refreshPreferences: self.refreshPreferences,
+            limitDisplayPreferences: self.limitDisplayPreferences,
             actions: SettingsActions(
                 reauthenticateProfile: { [weak self] (id: String, completion: @escaping (Result<Void, SettingsActionError>) -> Void) in
                     self?.startLogin(for: id, presentFailureAlert: false) { result in
@@ -791,6 +809,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 },
                 refreshScheduleChanged: { [weak self] in
                     self?.startPeriodicRefreshTimer()
+                },
+                limitDisplayModeChanged: { [weak self] in
+                    guard let self else { return }
+                    self.updateIcon()
+                    if self.isMenuOpen {
+                        self.rebuildMenu()
+                    }
                 },
                 reviewLegacyKeychainMigration: { [weak self] in
                     guard let self else {

@@ -2,11 +2,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ICON_EMPTY_SRC="$SCRIPT_DIR/assets/codex-profile-switcher-menu-icon-empty.png"
+ICON_EMPTY_SRC="$SCRIPT_DIR/assets/QuotaPilotMenuTemplate.png"
 OUT="${1:-$HOME/.local/bin/codex-profile-switcher}"
 OUT_DIR="$(dirname "$OUT")"
 HELPER_OUT="$OUT_DIR/codex-profile"
-ICON_EMPTY_OUT="$OUT_DIR/codex-profile-switcher-menu-icon-empty.png"
+ICON_EMPTY_OUT="$OUT_DIR/QuotaPilotMenuTemplate.png"
 BUILD_DIR="${CODEX_PROFILE_BUILD_DIR:-$SCRIPT_DIR/.build/dev}"
 REQUIRE_SIGNING="${CODEX_PROFILE_REQUIRE_SIGNING:-0}"
 

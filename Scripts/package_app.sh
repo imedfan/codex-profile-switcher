@@ -5,7 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ -f "$ROOT_DIR/version.env" ]]; then
   source "$ROOT_DIR/version.env"
 fi
-APP_BUNDLE="${APP_BUNDLE:-$ROOT_DIR/CodexProfileSwitcher.app}"
+APP_BUNDLE="${APP_BUNDLE:-$ROOT_DIR/QuotaPilot.app}"
+APP_DISPLAY_NAME="${APP_DISPLAY_NAME:-QuotaPilot}"
 BUILD_DIR="${CODEX_PROFILE_PACKAGE_BUILD_DIR:-$ROOT_DIR/.build/package-app}"
 PACKAGE_SCRATCH="$BUILD_DIR/swiftpm"
 BUNDLE_ID="${BUNDLE_ID:-com.4lau.codex-profile-switcher}"
@@ -18,6 +19,7 @@ HELPER_APPLICATION_IDENTIFIER="$APP_APPLICATION_IDENTIFIER"
 MARKETING_VERSION="${MARKETING_VERSION:-0.1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(git -C "$ROOT_DIR" rev-list --count HEAD 2>/dev/null || printf '1')}"
 REQUIRE_SIGNING="${CODEX_PROFILE_REQUIRE_SIGNING:-0}"
+LOCAL_BUILD="${CODEX_PROFILE_LOCAL_BUILD:-0}"
 APP_ENTITLEMENTS_BASE="${CODEX_PROFILE_APP_ENTITLEMENTS:-$ROOT_DIR/CodexProfileSwitcher.entitlements}"
 HELPER_ENTITLEMENTS_BASE="${CODEX_PROFILE_HELPER_ENTITLEMENTS:-$ROOT_DIR/CodexProfileHelper.entitlements}"
 APP_ENTITLEMENTS_SIGNED="$BUILD_DIR/CodexProfileSwitcher.signed.entitlements"
@@ -286,7 +288,7 @@ else
 fi
 
 if [[ "$BUNDLE_ID" == "$OFFICIAL_BUNDLE_ID" \
-  && "$APP_BUNDLE" == "/Applications/CodexProfileSwitcher.app" \
+  && "$APP_BUNDLE" == "/Applications/QuotaPilot.app" \
   && "$real_signing" != "1" ]]; then
   fail "installing the official app into /Applications requires APP_IDENTITY and Developer ID signing."
 fi
@@ -391,7 +393,7 @@ fi
 log "Embedding Sparkle.framework..."
 cp -R "$SPARKLE_DIR/Sparkle.framework" "$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
 for icon in \
-  codex-profile-switcher-menu-icon-empty.png \
+  QuotaPilotMenuTemplate.png \
   AppIcon.icns
 do
   if [[ -f "$ROOT_DIR/assets/$icon" ]]; then
@@ -410,9 +412,9 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleName</key>
-  <string>CodexProfileSwitcher</string>
+  <string>$APP_DISPLAY_NAME</string>
   <key>CFBundleDisplayName</key>
-  <string>Codex Profile Switcher</string>
+  <string>$APP_DISPLAY_NAME</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleExecutable</key>
@@ -436,7 +438,7 @@ cat > "$APP_BUNDLE/Contents/Info.plist" <<PLIST
   <key>SUFeedURL</key>
   <string>https://raw.githubusercontent.com/4LAU/codex-profile-switcher/main/appcast.xml</string>
   <key>SUEnableAutomaticChecks</key>
-  <true/>
+  <$([[ "$LOCAL_BUILD" == "1" ]] && printf 'false' || printf 'true')/>
   <key>SUScheduledCheckInterval</key>
   <integer>3600</integer>
 </dict>
@@ -470,7 +472,7 @@ cat > "$HELPER_APP_BUNDLE/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-if [[ -n "${SPARKLE_ED_PUBLIC_KEY:-}" ]]; then
+if [[ "$LOCAL_BUILD" != "1" && -n "${SPARKLE_ED_PUBLIC_KEY:-}" ]]; then
   plutil -insert SUPublicEDKey -string "$SPARKLE_ED_PUBLIC_KEY" "$APP_BUNDLE/Contents/Info.plist"
 fi
 

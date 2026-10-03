@@ -1,4 +1,4 @@
-# codex-profile-switcher
+# QuotaPilot
 
 Tiny macOS 14+ menu bar app that manages **multiple OpenAI Codex accounts** and shows per-profile usage. Switch profiles without logging in again, track the quota windows Codex reports with reset countdowns. Auth stored in macOS Keychain. No Dock icon, no main window, just a menu bar dropdown.
 
@@ -7,7 +7,7 @@ Tiny macOS 14+ menu bar app that manages **multiple OpenAI Codex accounts** and 
 [![Homebrew](https://img.shields.io/badge/brew-4lau%2Ftap%2Fcodex--profile--switcher-orange?style=flat-square)](https://github.com/4LAU/homebrew-tap)
 [![License: MIT](https://img.shields.io/badge/license-MIT-6e5aff?style=flat-square)](LICENSE)
 
-<img src="assets/screenshot-menu.png" width="300" alt="Codex Profile Switcher menu bar dropdown showing profiles with usage bars">
+<img src="assets/screenshot-menu.png" width="300" alt="QuotaPilot menu bar dropdown showing profiles with usage bars">
 
 ## Why
 
@@ -20,6 +20,7 @@ Tiny macOS 14+ menu bar app that manages **multiple OpenAI Codex accounts** and 
 - Manage multiple saved Codex profiles with custom labels
 - See each quota window Codex reports for a saved profile, with its actual duration
 - Show credit balance when Codex exposes it
+- See Cursor Models (Cm) and Other Models (Om) quotas in a separate menu section
 - Switch accounts without logging in every time
 - Refresh inactive OAuth profiles so usage data stays current
 - Renew stored credentials on a daily background schedule, before Codex reaches for its own refresh
@@ -29,11 +30,28 @@ Tiny macOS 14+ menu bar app that manages **multiple OpenAI Codex accounts** and 
 
 ## Privacy
 
-The app reads and writes macOS Keychain items it creates, `~/.codex/auth.json`, and its own config at `~/.codex-switcher/config.json`. It does not read browser data, does not access files outside those paths, and does not send telemetry or phone home.
+The app reads and writes macOS Keychain items it creates, `~/.codex/auth.json`, and its own config at `~/.codex-switcher/config.json`. Codex usage is fetched through the Codex CLI; credential renewal sends the stored refresh token to `https://auth.openai.com/oauth/token` and saves the rotated token in the vault. The app does not read browser data or send telemetry.
 
-It makes one kind of outbound request: credential renewal posts your stored refresh token to `https://auth.openai.com/oauth/token`, the same endpoint Codex itself uses, and stores the rotated token back in the Keychain. Nothing else leaves your machine.
+For Cursor usage, the app opens `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` read-only and reads only `cursorAuth/accessToken` and `cursorAuth/cachedTeam`. The token is sent only to `https://api2.cursor.sh`, kept in memory for the refresh, and never saved or logged. HTTP redirects are rejected. Cursor's database, account, and spending settings are never changed.
+
+## Cursor usage
+
+Sign in to the Cursor desktop app, then open this app's menu. A separate **Cursor** card uses the same compact usage bars as Codex: **Cm** for Cursor Models and **Om** for Other Models. The countdown beside **Cm** shows the time until the billing cycle resets. Hover over a row for its full name. The **Limit display** preference applies to both rows; the menu bar always shows the QuotaPilot icon.
+
+**Refresh**, menu-open refresh, wake refresh, and the configured polling schedule start updates for both services together. The single update line at the top covers both services and shows the oldest displayed snapshot. Cursor does not repeat the timestamp or display dollar amounts. Failed refreshes mark any last known Cursor usage; signing out or changing Cursor sessions clears its cached usage.
+
+Cursor's usage endpoints are undocumented and may change. This integration uses the same `GetCurrentPeriodUsage` call as the Cursor desktop app: `planUsage.autoPercentUsed`, `planUsage.apiPercentUsed`, and `billingCycleEnd`. Missing percentages are treated as unavailable, never as zero. It does not switch Cursor accounts or renew their credentials. If the session expires, sign in again in Cursor and refresh.
 
 ## Install
+
+For a personal build without Developer ID signing, run
+`Scripts/package_local_app.sh` and copy `.build/local-app/QuotaPilot.app` to
+`/Applications/QuotaPilot.app`. macOS may require **Open Anyway** in Privacy &
+Security on first launch. This build uses the real `~/.codex/auth.json` and
+stores saved profiles in `~/.codex-switcher/dev-auth-store` with private file
+permissions. It cannot read profiles from the signed app's Keychain; sign in to
+each profile once or migrate credentials from a file vault you already control.
+Automatic updates and the signed build's daily renewal agent are unavailable.
 
 Requires macOS 14+ and the [Codex desktop app](https://openai.com/codex/).
 
@@ -41,7 +59,7 @@ Requires macOS 14+ and the [Codex desktop app](https://openai.com/codex/).
 
 Download the latest signed and notarized DMG from
 [GitHub Releases](https://github.com/4LAU/codex-profile-switcher/releases), open
-it, and drag `CodexProfileSwitcher.app` to Applications.
+it, and drag `QuotaPilot.app` to Applications.
 
 ### Homebrew
 
@@ -86,7 +104,7 @@ the packaged app's bundled helper carries. Automation that needs the real
 profiles should call that helper directly:
 
 ```
-/Applications/CodexProfileSwitcher.app/Contents/Helpers/CodexProfileHelper.app/Contents/MacOS/codex-profile
+/Applications/QuotaPilot.app/Contents/Helpers/CodexProfileHelper.app/Contents/MacOS/codex-profile
 ```
 
 `make install-cli APP_IDENTITY="..."` still has a use: it signs the loose CLI
@@ -134,6 +152,11 @@ change refreshes still run.
 
 **Refresh when the menu opens** is off by default. Turn it on if opening the
 menu should also request fresh usage.
+
+**Limit display** chooses what the percentages mean. **Used** (the default)
+shows 0% for a full limit and 100% for an exhausted one; **Remaining**
+reverses this, so 100% is a full limit and 0% is exhausted. It applies to the
+Codex and Cursor usage bars in the dropdown.
 
 Choose **Refresh** or press Command-R to update the open menu in place. The
 menu stays open and the Refresh row is disabled until the work finishes. If a
@@ -320,7 +343,7 @@ For headless use, install the app and register a LaunchAgent of your own:
   <string>com.example.codex-profile-renew</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Applications/CodexProfileSwitcher.app/Contents/Helpers/CodexProfileHelper.app/Contents/MacOS/codex-profile</string>
+    <string>/Applications/QuotaPilot.app/Contents/Helpers/CodexProfileHelper.app/Contents/MacOS/codex-profile</string>
     <string>renew</string>
   </array>
   <key>StartCalendarInterval</key>

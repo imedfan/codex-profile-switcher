@@ -2,6 +2,7 @@
 *.o
 *.d
 .build/
+.swiftpm/
 CodexProfileSwitcher.app/
 ignore-dump/
 auth.json
@@ -23,3 +24,5 @@ test-scope.md
 testing-policy.md
 .security/
 assets/AppIcon.iconset/
+
+QuotaPilot.app/

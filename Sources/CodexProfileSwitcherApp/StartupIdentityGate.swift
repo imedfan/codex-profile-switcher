@@ -8,6 +8,7 @@ enum StartupIdentityGate {
 
     enum Decision: Equatable {
         case production
+        case localInstall
         case isolated
         case recovery
     }
@@ -44,7 +45,7 @@ enum StartupIdentityGate {
         }
     }
 
-    static let installedBundleURL = URL(fileURLWithPath: "/Applications/CodexProfileSwitcher.app")
+    static let installedBundleURL = installedBundleURL(bundleIdentifier: Bundle.main.bundleIdentifier)
     static let recoveryLaunchArgument = "--codex-profile-switcher-recovery"
     static let recoveryNoticeName =
         Notification.Name("com.4lau.codex-profile-switcher.startup-repaired")
@@ -56,6 +57,13 @@ enum StartupIdentityGate {
     private static let expectedTeamIdentifier = "W3ZHLSH96F"
     private static let expectedKeychainAccessGroup =
         "W3ZHLSH96F.com.4lau.codex-profile-switcher.auth-v2"
+
+    static func installedBundleURL(bundleIdentifier: String?) -> URL {
+        let name = bundleIdentifier == "com.4lau.codex-profile-switcher.local"
+            ? "QuotaPilot Test.app"
+            : "QuotaPilot.app"
+        return URL(fileURLWithPath: "/Applications").appendingPathComponent(name)
+    }
 
     static func classify(
         bundleURL: URL,
@@ -73,11 +81,10 @@ enum StartupIdentityGate {
                 : .recovery
         }
 
-        guard hasDataProtectionKeychainAccess,
-              Self.isLiteralInstalledURL(bundleURL, expected: installedBundleURL) else {
+        guard Self.isLiteralInstalledURL(bundleURL, expected: installedBundleURL) else {
             return .recovery
         }
-        return .production
+        return hasDataProtectionKeychainAccess ? .production : .localInstall
     }
 
     static func makeIsolatedAuthVault(environment: [String: String]) -> FileAuthVault {

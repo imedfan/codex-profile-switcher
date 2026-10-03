@@ -194,17 +194,25 @@ struct UsageRow: View {
     let percent: Int
     let resetAt: Date?
     let isHighlighted: Bool
+    let displayMode: LimitDisplayMode
+
+    private var displayedPercent: Int {
+        self.displayMode.displayedPercent(forUsedPercent: self.percent)
+    }
 
     var body: some View {
         HStack(spacing: 4) {
             Text(self.label)
                 .font(.system(size: 10, weight: .medium))
                 .foregroundStyle(self.isHighlighted ? .secondary : .tertiary)
-                .frame(width: 16, alignment: .leading)
+                .lineLimit(1)
+                .frame(width: 20, alignment: .leading)
 
-            UsageBar(percent: Double(self.percent), tint: progressColor(for: self.percent))
+            // The tint keeps keying off the used percent: a nearly exhausted
+            // limit stays red whether the number shown is used or remaining.
+            UsageBar(percent: Double(self.displayedPercent), tint: progressColor(for: self.percent))
 
-            Text("\(self.percent)%")
+            Text("\(self.displayedPercent)%")
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(self.isHighlighted ? .primary : .secondary)
                 .frame(width: 30, alignment: .trailing)
@@ -223,17 +231,24 @@ struct UsageHeaderView: View {
     let failingProfiles: Int
     let trackedProfiles: Int
 
-    static let baseHeight: CGFloat = 42
-    static let failureHeight: CGFloat = 57
-
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Codex")
-                .font(.system(size: 12, weight: .semibold))
+            HStack(spacing: 10) {
+                Image(nsImage: IconRenderer.render())
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 28, height: 28)
+                    .accessibilityHidden(true)
 
-            Text(self.statusLabel)
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(AppInfo.name)
+                        .font(.system(size: 12, weight: .semibold))
+
+                    Text(self.statusLabel)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             if self.showsFailure {
                 Label(self.failureLabel, systemImage: "exclamationmark.triangle.fill")
@@ -271,6 +286,7 @@ struct ProfileCardView: View {
     let status: ProfileStatus
     let isActive: Bool
     let duplicateLine: String?
+    let displayMode: LimitDisplayMode
     let onSwitch: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
@@ -370,7 +386,8 @@ struct ProfileCardView: View {
                         legacyLabel: "5h"),
                     percent: snap.primaryUsedPercent,
                     resetAt: snap.primaryResetAt,
-                    isHighlighted: self.isActive || self.isHovered)
+                    isHighlighted: self.isActive || self.isHovered,
+                    displayMode: self.displayMode)
             }
             if self.hasSecondaryWindow(snap) {
                 UsageRow(
@@ -379,7 +396,8 @@ struct ProfileCardView: View {
                         legacyLabel: "Wk"),
                     percent: snap.secondaryUsedPercent,
                     resetAt: snap.secondaryResetAt,
-                    isHighlighted: self.isActive || self.isHovered)
+                    isHighlighted: self.isActive || self.isHovered,
+                    displayMode: self.displayMode)
             }
         }
     }
